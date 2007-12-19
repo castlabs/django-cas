@@ -1,6 +1,6 @@
 from django.http import HttpResponseRedirect, HttpResponseForbidden, urlencode
 from django.conf import settings
-from django_cas import redirect_url, service_url
+from django_cas import redirect_url, service_url, login_url
 
 def login(request, next_page=None):
     if not next_page:
