@@ -1,0 +1,39 @@
+Index: /usr/local/src/django/django/contrib/auth/decorators.py
+===================================================================
+--- /usr/local/src/django/django/contrib/auth/decorators.py	(revision 6941)
++++ /usr/local/src/django/django/contrib/auth/decorators.py	(working copy)
+@@ -1,5 +1,5 @@
+ from django.contrib.auth import REDIRECT_FIELD_NAME
+-from django.http import HttpResponseRedirect
++from django.http import HttpResponseRedirect, HttpResponseForbidden
+ from django.utils.http import urlquote
+ 
+ def user_passes_test(test_func, login_url=None, redirect_field_name=REDIRECT_FIELD_NAME):
+@@ -30,6 +30,7 @@
+     Decorator for views that checks whether a user has a particular permission
+     enabled, redirecting to the log-in page if necessary.
+     """
++    # import pdb; pdb.set_trace()
+     return user_passes_test(lambda u: u.has_perm(perm), login_url=login_url)
+ 
+ class _CheckLogin(object):
+@@ -58,8 +59,19 @@
+         return _CheckLogin(view_func, self.test_func, self.login_url, self.redirect_field_name)
+     
+     def __call__(self, request, *args, **kwargs):
++        """ Execute the test_function for the end user,
++        otherwise, redirect them to an appropriate page """
++        
+         if self.test_func(request.user):
+             return self.view_func(request, *args, **kwargs)
++
+         path = urlquote(request.get_full_path())
++
++        if request.user.is_authenticated():
++            # pushing the user back through the login_url only makes
++            # sense if they haven't already done that.
++            return HttpResponseForbidden("<h1>Access Forbidden: You do not have rights to %s</h1>" % path)
++
+         tup = self.login_url, self.redirect_field_name, path
++
+         return HttpResponseRedirect('%s?%s=%s' % tup)
