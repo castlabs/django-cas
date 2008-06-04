@@ -14,7 +14,9 @@ Installation
 ------------
 
 Run `python setup.py install`, or place the `django_cas` directory in your
-`PYTHONPATH` directly.
+`PYTHONPATH` directly. (Note: If you're using Python 2.4 or older, you'll need
+to install [http://pypi.python.org/pypi/elementtree/ ElementTree] to use
+CAS 2.0 functionality.)
 
 Now add it to the middleware and authentication backends in your settings.
 Make sure you also have the authentication middleware installed. Here's what
