@@ -95,7 +95,7 @@ Preventing Infinite Redirects
 -----------------------------
 
 Django's current implementation of its `permission_required` and
-`user_passes_test` decorators (in `django.contrib.auth.decorators`) have a
+`user_passes_test` decorators (in `django.contrib.auth.decorators`) has a
 known issue that can cause users to experience infinite redirects. The
 decorators return the user to the login page, even if they're already logged
 in, which causes a loop with SSO services like CAS.
