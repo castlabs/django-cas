@@ -1,17 +1,16 @@
-Django CAS
-==========
+= Django CAS =
 
-`django_cas` is a CAS 1.0 and CAS 2.0 authentication backend for Django. It
-allows you to use Django's built-in authentication mechanisms and `User`
-model while adding support for CAS.
+`django_cas` is a [http://www.ja-sig.org/products/cas/ CAS] 1.0 and CAS 2.0
+authentication backend for [http://www.djangoproject.com/ Django]. It allows
+you to use Django's built-in authentication mechanisms and `User` model while
+adding support for CAS.
 
 It also includes a middleware that intercepts calls to the original login
 and logout pages and forwards them to the CASified versions, and adds
 CAS support to the admin interface.
 
 
-Installation
-------------
+== Installation ==
 
 Run `python setup.py install`, or place the `django_cas` directory in your
 `PYTHONPATH` directly. (Note: If you're using Python 2.4 or older, you'll need
@@ -22,18 +21,20 @@ Now add it to the middleware and authentication backends in your settings.
 Make sure you also have the authentication middleware installed. Here's what
 mine looks like:
 
-    MIDDLEWARE_CLASSES = (
-        'django.middleware.common.CommonMiddleware',
-        'django.contrib.sessions.middleware.SessionMiddleware',
-        'django.contrib.auth.middleware.AuthenticationMiddleware',
-        'django_cas.middleware.CASMiddleware',
-        'django.middleware.doc.XViewMiddleware',
-    )
+{{{
+MIDDLEWARE_CLASSES = (
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_cas.middleware.CASMiddleware',
+    'django.middleware.doc.XViewMiddleware',
+)
 
-    AUTHENTICATION_BACKENDS = (
-        'django.contrib.auth.backends.ModelBackend',
-        'django_cas.backends.CASBackend',
-    )
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'django_cas.backends.CASBackend',
+)
+}}}
 
 Set the following required setting in `settings.py`:
 
@@ -67,32 +68,32 @@ Users should now be able to log into your site (and staff into the
 administration interface) using CAS.
 
 
-Populating user data
---------------------
+== Populating User Data ==
 
 To add user data, subclass `CASBackend` and specify that as your
 application's backend.
 
 For example:
 
-    from django_cas.backend import CASBackend
+{{{
+from django_cas.backend import CASBackend
 
-    class PopulatedCASBackend(CASBackend):
-        """CAS authentication backend with user data populated from AD"""
+class PopulatedCASBackend(CASBackend):
+    """CAS authentication backend with user data populated from AD"""
 
-        def authenticate(self, ticket, service):
-            """Authenticates CAS ticket and retrieves user data"""
+    def authenticate(self, ticket, service):
+        """Authenticates CAS ticket and retrieves user data"""
 
-            user = super(PopulatedCASBackend, self).authenticate(
-                ticket, service)
+        user = super(PopulatedCASBackend, self).authenticate(
+            ticket, service)
 
-            # Connect to AD, modify user object, etc.
+        # Connect to AD, modify user object, etc.
 
-            return user
+        return user
+}}}
 
 
-Preventing Infinite Redirects
------------------------------
+== Preventing Infinite Redirects ==
 
 Django's current implementation of its `permission_required` and
 `user_passes_test` decorators (in `django.contrib.auth.decorators`) has a
@@ -107,44 +108,46 @@ is fixed, the decorators should still work without issue.
 For more information see http://code.djangoproject.com/ticket/4617.
 
 
-Customizing the 403 Error Page
-------------------------------
+== Customizing the 403 Error Page ==
 
 Django doesn't provide a simple way to customize 403 error pages, so you'll
 have to make a response middleware that handles `HttpResponseForbidden`.
 
 For example, in `views.py`:
 
-    from django.http import HttpResponseForbidden
-    from django.template import Context, loader
+{{{
+from django.http import HttpResponseForbidden
+from django.template import Context, loader
 
-    def forbidden(request, template_name='403.html'):
-        """Default 403 handler"""
+def forbidden(request, template_name='403.html'):
+    """Default 403 handler"""
 
-        t = loader.get_template(template_name)
-        return HttpResponseForbidden(t.render(Context({})))
+    t = loader.get_template(template_name)
+    return HttpResponseForbidden(t.render(Context({})))
+}}}
 
 And in `middleware.py`:
 
-    from django.http import HttpResponseForbidden
+{{{
+from django.http import HttpResponseForbidden
 
-    from yourapp.views import forbidden
+from yourapp.views import forbidden
 
-    class Custom403Middleware(object):
-          """Catches 403 responses and renders 403.html"""
+class Custom403Middleware(object):
+      """Catches 403 responses and renders 403.html"""
 
-          def process_response(self, request, response):
+      def process_response(self, request, response):
 
-              if isinstance(response, HttpResponseForbidden):
-                 return forbidden(request)
-              else:
-                 return response
+          if isinstance(response, HttpResponseForbidden):
+             return forbidden(request)
+          else:
+             return response
+}}}
 
 Now add `yourapp.middleware.Custom403Middleware` to your `MIDDLEWARE_CLASSES`
 setting and create a template named `403.html`.
 
-CAS 2.0 support
----------------
+== CAS 2.0 support ==
 
 The CAS 2.0 protocol is supported in the same way that 1.0 is; no extensions
 or new features from the CAS 2.0 specification are implemented. `elementtree`
@@ -155,8 +158,7 @@ Note: The CAS 3.x server uses the CAS 2.0 protocol. There is no CAS 3.0
 protocol, though the CAS 3.x server does allow extensions to the protocol.
 
 
-Differences Between Django CAS 1.0 and 2.0
-------------------------------------------
+== Differences Between Django CAS 1.0 and 2.0 ==
 
 Version 2.0 of `django_cas` breaks compatibility in some small ways, in order
 simplify the library. The following settings have been removed:
