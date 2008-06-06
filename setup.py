@@ -19,6 +19,7 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
     ],
     description='CAS 1.0/2.0 authentication backend for Django',
+    download_url='http://django-cas.googlecode.com/files/django_cas-2.0.zip',
     keywords='django cas cas2 authentication middleware backend',
     license='MIT',
     long_description="""
@@ -30,8 +31,8 @@ It also includes a middleware that intercepts calls to the original login and
 logout pages and forwards them to the CASified versions, and adds CAS support
 to the admin interface.
 
-_ ..CAS: http://www.ja-sig.org/products/cas/
-_ ..Django: http://www.djangoproject.com/
+.. _CAS: http://www.ja-sig.org/products/cas/
+.. _Django: http://www.djangoproject.com/
 """,
     name='django_cas',
     packages=['django_cas'],
