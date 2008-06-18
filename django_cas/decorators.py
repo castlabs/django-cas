@@ -9,14 +9,10 @@ __all__ = ['permission_required', 'user_passes_test']
 class CheckLoginOrForbid(_CheckLogin):
 
     def __call__(self, request, *args, **kwargs):
-
-        response = super(CheckLoginOrForbid, self).__call__(request, *args,
-                                                            **kwargs)
-        if (isinstance(response, HttpResponseRedirect) and
-            request.user.is_authenticated()):
-            return HttpResponseForbidden('<h1>Permission denied</h1>')
+        if self.test_func(request.user):
+            return self.view_func(request, *args, **kwargs)
         else:
-            return response
+            return HttpResponseForbidden('<h1>Permission denied</h1>')
 
 
 def user_passes_test(test_func, login_url=None,
