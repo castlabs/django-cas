@@ -117,13 +117,13 @@ For example, in `views.py`:
 
 {{{
 from django.http import HttpResponseForbidden
-from django.template import Context, loader
+from django.template import RequestContext, loader
 
 def forbidden(request, template_name='403.html'):
     """Default 403 handler"""
 
     t = loader.get_template(template_name)
-    return HttpResponseForbidden(t.render(Context({})))
+    return HttpResponseForbidden(t.render(RequestContext(request)))
 }}}
 
 And in `middleware.py`:
