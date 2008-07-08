@@ -1,0 +1,6 @@
+= Release Notes =
+
+== Version 2.0.1 ==
+
+  * Fixed normal redirects incorrectly being caught by `@user_passes_test`
+    and `@permission_required`.
