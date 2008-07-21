@@ -2,7 +2,7 @@
 
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import _CheckLogin
-from django.http import HttpResponseForbidden, HttpResponseRedirect
+from django.http import HttpResponseForbidden
 
 __all__ = ['permission_required', 'user_passes_test']
 
