@@ -1,6 +1,5 @@
 """CAS authentication middleware"""
 
-import os
 from urllib import urlencode
 
 from django.http import HttpResponseRedirect, HttpResponseForbidden
@@ -36,21 +35,10 @@ class CASMiddleware(object):
         elif view_func == logout:
             return cas_logout(request, *view_args, **view_kwargs)
 
-        admin_prefix = settings.CAS_ADMIN_PREFIX
-        if admin_prefix:
-            if not request.path.startswith(admin_prefix):
+        if settings.CAS_ADMIN_PREFIX:
+            if not request.path.startswith(settings.CAS_ADMIN_PREFIX):
                 return None
-        else:
-            admin_path = ['django', 'contrib', 'admin', 'views']
-            try:
-                view_file = view_func.func_code.co_filename
-            except AttributeError:
-                # If we get a protected decorator that abstracts this away
-                # into something like _CheckLogin
-                view_file = view_func.view_func.func_code.co_filename
-
-            view_path = os.path.split(view_file)[0].split(os.path.sep)[-4:]
-            if view_path != admin_path:
+        elif not view_func.__module__.startswith('django.contrib.admin.'):
                 return None
 
         if request.user.is_authenticated():
