@@ -39,7 +39,7 @@ class CASMiddleware(object):
             if not request.path.startswith(settings.CAS_ADMIN_PREFIX):
                 return None
         elif not view_func.__module__.startswith('django.contrib.admin.'):
-                return None
+            return None
 
         if request.user.is_authenticated():
             if request.user.is_staff:
