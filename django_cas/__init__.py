@@ -1,7 +1,6 @@
 """Django CAS 1.0/2.0 authentication backend"""
 
 from django.conf import settings
-from django.contrib.auth import REDIRECT_FIELD_NAME
 
 __all__ = []
 
