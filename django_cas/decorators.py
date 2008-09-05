@@ -1,19 +1,14 @@
 """Replacement authentication decorators that work around redirection loops"""
 
+try:
+    from functools import wraps
+except ImportError:
+    from django.utils.functional import wraps
+
 from django.contrib.auth import REDIRECT_FIELD_NAME
-from django.contrib.auth.decorators import _CheckLogin
 from django.http import HttpResponseForbidden
 
-__all__ = ['login_required', 'permission_required', 'user_passes_test']
-
-class CheckLoginOrForbid(_CheckLogin):
-
-    def __call__(self, request, *args, **kwargs):
-        if self.test_func(request.user):
-            return self.view_func(request, *args, **kwargs)
-        else:
-            return HttpResponseForbidden('<h1>Permission denied</h1>')
-
+__all__ = ['permission_required', 'user_passes_test']
 
 def user_passes_test(test_func, login_url=None,
                      redirect_field_name=REDIRECT_FIELD_NAME):
@@ -21,10 +16,15 @@ def user_passes_test(test_func, login_url=None,
     returns 403 Forbidden if the user is already logged in.
     """
 
-    def decorate(view_func):
-        return CheckLoginOrForbid(view_func, test_func, login_url,
-                                  redirect_field_name)
-    return decorate
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if test_func(request.user):
+                return view_func(request, *args, **kwargs)
+            else:
+                return HttpResponseForbidden('<h1>Permission denied</h1>')
+        return wrapper
+    return decorator
 
 
 def login_required(function=None, redirect_field_name=REDIRECT_FIELD_NAME):
