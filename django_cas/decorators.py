@@ -4,7 +4,7 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import _CheckLogin
 from django.http import HttpResponseForbidden
 
-__all__ = ['permission_required', 'user_passes_test']
+__all__ = ['login_required', 'permission_required', 'user_passes_test']
 
 class CheckLoginOrForbid(_CheckLogin):
 
@@ -25,6 +25,20 @@ def user_passes_test(test_func, login_url=None,
         return CheckLoginOrForbid(view_func, test_func, login_url,
                                   redirect_field_name)
     return decorate
+
+
+def login_required(function=None, redirect_field_name=REDIRECT_FIELD_NAME):
+    """Replacement for django.contrib.auth.decorators.login_required that
+    returns 403 Forbidden if the user is already logged in.
+    """
+
+    actual_decorator = user_passes_test(
+        lambda u: u.is_authenticated(),
+        redirect_field_name=redirect_field_name
+    )
+    if function:
+        return actual_decorator(function)
+    return actual_decorator
 
 
 def permission_required(perm, login_url=None):
