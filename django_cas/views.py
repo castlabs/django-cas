@@ -35,8 +35,8 @@ def _redirect_url(request):
             next = settings.CAS_REDIRECT_URL
         else:
             next = request.META.get('HTTP_REFERER', settings.CAS_REDIRECT_URL)
-        prefix =  (('http://', 'https://')[request.is_secure()] +
-                   get_host(request))
+        prefix = (('http://', 'https://')[request.is_secure()] +
+                  get_host(request))
         if next.startswith(prefix):
             next = next[len(prefix):]
     return next
