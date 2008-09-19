@@ -19,7 +19,7 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
     ],
     description='CAS 1.0/2.0 authentication backend for Django',
-    download_url='http://django-cas.googlecode.com/files/django_cas-2.0.1.zip',
+    download_url='http://django-cas.googlecode.com/files/django_cas-2.0.2.zip',
     keywords='django cas cas2 authentication middleware backend',
     license='MIT',
     long_description="""
@@ -37,5 +37,5 @@ to the admin interface.
     name='django_cas',
     packages=['django_cas'],
     url='http://code.google.com/p/django-cas/',
-    version='2.0.1',
+    version='2.0.2',
 )
