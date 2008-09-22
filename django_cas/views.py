@@ -46,6 +46,8 @@ def _login_url(service):
     """Generates CAS login URL"""
 
     params = {'service': service}
+    if settings.CAS_EXTRA_LOGIN_PARAMS:
+        params.update(settings.CAS_EXTRA_LOGIN_PARAMS)
     url = urljoin(settings.CAS_SERVER_URL, 'login') + '?' + urlencode(params)
     return url
 

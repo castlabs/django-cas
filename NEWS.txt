@@ -1,5 +1,9 @@
 = Release Notes =
 
+== Version 2.0.3 ==
+
+  * Added `CAS_EXTRA_LOGIN_PARAMS` setting (patched contributed by frasern).
+
 == Version 2.0.2 ==
 
   * Added support for Django 1.0.

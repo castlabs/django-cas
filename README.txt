@@ -47,6 +47,8 @@ Optional settings include:
     * `CAS_ADMIN_PREFIX`: The URL prefix of the Django administration site.
       If undefined, the CAS middleware will check the view being rendered to
       see if it lives in `django.contrib.admin.views`.
+    * `CAS_EXTRA_LOGIN_PARAMS`: Extra URL parameters to add to the login URL
+      when redirecting the user.
     * `CAS_IGNORE_REFERER`: If `True`, logging out of the application will
       always send the user to the URL specified by `CAS_REDIRECT_URL`.
     * `CAS_LOGOUT_COMPLETELY`: If `False`, logging out of the application
