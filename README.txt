@@ -78,7 +78,7 @@ application's backend.
 For example:
 
 {{{
-from django_cas.backend import CASBackend
+from django_cas.backends import CASBackend
 
 class PopulatedCASBackend(CASBackend):
     """CAS authentication backend with user data populated from AD"""
