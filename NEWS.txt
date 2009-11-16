@@ -3,6 +3,8 @@
 == Version 2.0.3 ==
 
   * Added `CAS_EXTRA_LOGIN_PARAMS` setting (patched contributed by frasern).
+  * Fixed behavior of `django_cas.decorators`: they now only return 403s for
+    authenticated users.
 
 == Version 2.0.2 ==
 
