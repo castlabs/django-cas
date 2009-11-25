@@ -48,8 +48,7 @@ def _login_url(service):
     params = {'service': service}
     if settings.CAS_EXTRA_LOGIN_PARAMS:
         params.update(settings.CAS_EXTRA_LOGIN_PARAMS)
-    url = urljoin(settings.CAS_SERVER_URL, 'login') + '?' + urlencode(params)
-    return url
+    return urljoin(settings.CAS_SERVER_URL, 'login') + '?' + urlencode(params)
 
 
 def _logout_url(request, next_page=None):
@@ -75,10 +74,10 @@ def login(request, next_page=None):
     ticket = request.GET.get('ticket')
     service = _service_url(request, next_page)
     if ticket:
-        from django.contrib.auth import authenticate, login
-        user = authenticate(ticket=ticket, service=service)
+        from django.contrib import auth
+        user = auth.authenticate(ticket=ticket, service=service)
         if user is not None:
-            login(request, user)
+            auth.login(request, user)
             name = user.first_name or user.username
             message = "Login succeeded. Welcome, %s." % name
             user.message_set.create(message=message)
@@ -87,8 +86,7 @@ def login(request, next_page=None):
             error = "<h1>Forbidden</h1><p>Login failed.</p>"
             return HttpResponseForbidden(error)
     else:
-        url = _login_url(service)
-        return HttpResponseRedirect(url)
+        return HttpResponseRedirect(_login_url(service))
 
 
 def logout(request, next_page=None):
