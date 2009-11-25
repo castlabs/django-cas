@@ -55,6 +55,8 @@ Optional settings include:
       won't log the user out of CAS as well.
     * `CAS_REDIRECT_URL`: Where to send a user after logging in or out if
       there is no referrer and no next page set. Default is `/`.
+    * `CAS_RETRY_LOGIN`: If `True` and an unknown or invalid ticket is
+      received, the user is redirected back to the login page.
     * `CAS_VERSION`: The CAS protocol version to use. `'1'` and `'2'` are
       supported, with `'2'` being the default.
 

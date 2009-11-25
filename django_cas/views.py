@@ -62,7 +62,7 @@ def _logout_url(request, next_page=None):
     return url
 
 
-def login(request, next_page=None):
+def login(request, next_page=None, required=False):
     """Forwards to CAS login URL or verifies CAS ticket"""
 
     if not next_page:
@@ -82,6 +82,8 @@ def login(request, next_page=None):
             message = "Login succeeded. Welcome, %s." % name
             user.message_set.create(message=message)
             return HttpResponseRedirect(next_page)
+        elif settings.CAS_RETRY_LOGIN or required:
+            return HttpResponseRedirect(_login_url(service))
         else:
             error = "<h1>Forbidden</h1><p>Login failed.</p>"
             return HttpResponseForbidden(error)
