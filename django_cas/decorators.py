@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.utils.http import urlquote
 
-__all__ = ['permission_required', 'user_passes_test']
+__all__ = ['login_required', 'permission_required', 'user_passes_test']
 
 def user_passes_test(test_func, login_url=None,
                      redirect_field_name=REDIRECT_FIELD_NAME):
