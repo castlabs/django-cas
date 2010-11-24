@@ -1,5 +1,9 @@
 = Release Notes =
 
+== Version X.X.X ==
+ 
+  * Added support for CAS proxy authentication.
+
 == Version 2.0.3 ==
 
   * Added `CAS_EXTRA_LOGIN_PARAMS` setting (patched contributed by frasern).

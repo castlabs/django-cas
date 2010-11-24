@@ -3,9 +3,10 @@
 from urllib import urlencode
 from urlparse import urljoin
 
-from django.http import get_host, HttpResponseRedirect, HttpResponseForbidden
+from django.http import get_host, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
+from django_cas.models import PgtIOU
 
 __all__ = ['login', 'logout']
 
@@ -76,6 +77,7 @@ def login(request, next_page=None, required=False):
     if ticket:
         from django.contrib import auth
         user = auth.authenticate(ticket=ticket, service=service)
+
         if user is not None:
             auth.login(request, user)
             name = user.first_name or user.username
@@ -102,3 +104,18 @@ def logout(request, next_page=None):
         return HttpResponseRedirect(_logout_url(request, next_page))
     else:
         return HttpResponseRedirect(next_page)
+
+def proxy_callback(request):
+    """Handles CAS 2.0+ XML-based proxy callback call.
+
+    Stores the proxy granting ticket in the database for 
+    future use.
+    """
+    pgtIou = request.GET.get('pgtIou')
+    tgt = request.GET.get('pgtId')
+
+    if not (pgtIou and tgt):
+        return HttpResponse()
+
+    PgtIOU.objects.create(tgt = tgt, pgtIou = pgtIou)
+    return HttpResponse()

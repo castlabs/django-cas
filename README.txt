@@ -43,7 +43,11 @@ Set the following required setting in `settings.py`:
       http://sso.some.edu/cas/).
 
 Optional settings include:
-
+    * `CAS_PROXY_CALLBACK`: The URL given to the CAS server in order to 
+      initialize a proxy ticket. The ticket granting ticket will be sent
+      to this URL. The url must be registered in urls.py and handled 
+      by django_cas.views.proxy_callback, e.g:
+      (r'^accounts/login/casProxyCallback$', 'django_cas.views.proxy_callback')
     * `CAS_ADMIN_PREFIX`: The URL prefix of the Django administration site.
       If undefined, the CAS middleware will check the view being rendered to
       see if it lives in `django.contrib.admin.views`.
@@ -125,6 +129,22 @@ is fixed, the decorators should still work without issue.
 
 For more information see http://code.djangoproject.com/ticket/4617.
 
+== CAS proxy tickets ==
+
+Using CAS proxy tickets is quite a bit less trivial than ordinary tickets.
+First of all the CAS server requires that the Django site can be accessed
+via https, and it MUST have a properly signed certificate that the CAS 
+server can verify.
+
+For the test-server this can be achieved using a tunneling application 
+such as stunnel. However this is not enough. The CAS proxy auhentication
+requires that both the web browser and the CAS server simoultaneously can
+make requests to the Django server, which the Django test server does not
+support.
+
+However, there is a Django app you can use to be able to start a threaded
+test server hosted here: 
+http://github.com/jaylett/django_concurrent_test_server
 
 == Customizing the 403 Error Page ==
 

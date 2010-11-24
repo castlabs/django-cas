@@ -4,8 +4,8 @@ from urllib import urlencode, urlopen
 from urlparse import urljoin
 
 from django.conf import settings
-
-from django_cas.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from django_cas.models import User, Tgt, PgtIOU
 
 __all__ = ['CASBackend']
 
@@ -40,20 +40,70 @@ def _verify_cas2(ticket, service):
     except ImportError:
         from elementtree import ElementTree
 
-    params = {'ticket': ticket, 'service': service}
+    if settings.CAS_PROXY_CALLBACK:
+        params = {'ticket': ticket, 'service': service, 'pgtUrl': settings.CAS_PROXY_CALLBACK}
+    else:
+        params = {'ticket': ticket, 'service': service}
+
     url = (urljoin(settings.CAS_SERVER_URL, 'proxyValidate') + '?' +
            urlencode(params))
+
     page = urlopen(url)
+
     try:
         response = page.read()
         tree = ElementTree.fromstring(response)
         if tree[0].tag.endswith('authenticationSuccess'):
-            return tree[0][0].text
+            username = tree[0][0].text
+            if len(tree[0]) >= 2 and tree[0][1].tag.endswith('proxyGrantingTicket'):
+                pgtIou = PgtIOU.objects.get(pgtIou = tree[0][1].text)
+                try:
+                    tgt = Tgt.objects.get(username = username)
+                    tgt.tgt = pgtIou.tgt
+                    tgt.save()
+                except ObjectDoesNotExist:
+                    Tgt.objects.create(username = username, tgt = pgtIou.tgt)
+
+                pgtIou.delete()
+            return username
         else:
             return None
     finally:
         page.close()
 
+
+def verify_proxy_ticket(ticket, service):
+    """Verifies CAS 2.0+ XML-based proxy ticket.
+
+    Returns username on success and None on failure.
+    """
+
+    try:
+        from xml.etree import ElementTree
+    except ImportError:
+        from elementtree import ElementTree
+
+    params = {'ticket': ticket, 'service': service}
+
+    url = (urljoin(settings.CAS_SERVER_URL, 'proxyValidate') + '?' +
+           urlencode(params))
+
+    page = urlopen(url)
+
+    try:
+        response = page.read()
+        tree = ElementTree.fromstring(response)
+        if tree[0].tag.endswith('authenticationSuccess'):
+            username = tree[0][0].text
+            proxies = []
+            for element in tree[0][1]:
+                proxies.append(element.text)
+            return {"username": username, "proxies": proxies}
+        else:
+            return None
+    finally:
+        page.close()
+    
 
 _PROTOCOLS = {'1': _verify_cas1, '2': _verify_cas2}
 
