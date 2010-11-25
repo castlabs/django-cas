@@ -43,13 +43,15 @@ def _redirect_url(request):
     return next
 
 
-def _login_url(service):
+def _login_url(service, ticket='ST'):
     """Generates CAS login URL"""
-
+    LOGINS = {'ST':'login',
+              'PT':'proxyValidate'}
     params = {'service': service}
     if settings.CAS_EXTRA_LOGIN_PARAMS:
         params.update(settings.CAS_EXTRA_LOGIN_PARAMS)
-    return urljoin(settings.CAS_SERVER_URL, 'login') + '?' + urlencode(params)
+    login = LOGINS.get(ticket[:2],'login')
+    return urljoin(settings.CAS_SERVER_URL, login) + '?' + urlencode(params)
 
 
 def _logout_url(request, next_page=None):
@@ -85,12 +87,12 @@ def login(request, next_page=None, required=False):
             user.message_set.create(message=message)
             return HttpResponseRedirect(next_page)
         elif settings.CAS_RETRY_LOGIN or required:
-            return HttpResponseRedirect(_login_url(service))
+            return HttpResponseRedirect(_login_url(service, ticket))
         else:
             error = "<h1>Forbidden</h1><p>Login failed.</p>"
             return HttpResponseForbidden(error)
     else:
-        return HttpResponseRedirect(_login_url(service))
+        return HttpResponseRedirect(_login_url(service, ticket))
 
 
 def logout(request, next_page=None):
