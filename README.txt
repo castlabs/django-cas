@@ -1,3 +1,16 @@
+Ed Crewe 24 Nov 2010
+--------------------
+
+Add the CAS proxy patch from Fredrik Jönsson Norrström
+
+Create this as a clone to allow for any other tweaks required, and so
+that it can easily pulled down for use.
+
+Also added missing exceptions.py
+
+2.0.3 README
+------------
+
 = Django CAS =
 
 `django_cas` is a [http://www.ja-sig.org/products/cas/ CAS] 1.0 and CAS 2.0
