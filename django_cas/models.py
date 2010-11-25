@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django_cas.exceptions import CasTicketException, CasConfigException
 
-class Tgt(models.Model):
+class AuthTgt(models.Model):
     username = models.CharField(max_length = 255, unique = True)
     tgt = models.CharField(max_length = 255)
 
@@ -40,7 +40,7 @@ class Tgt(models.Model):
         finally:
             page.close()
 
-class PgtIOU(models.Model):
+class AuthPgtIOU(models.Model):
     pgtIou = models.CharField(max_length = 255, unique = True)
     tgt = models.CharField(max_length = 255)
     timestamp = models.DateTimeField(auto_now = True)
