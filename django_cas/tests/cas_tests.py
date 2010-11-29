@@ -8,6 +8,7 @@
 # You will need to edit the constants below to match your setup ...
 
 import sys
+import getpass
 import urllib2
 import urllib
 from urlparse import urljoin
@@ -32,13 +33,12 @@ except:
 
 def get_auth():
     """ Get authentication by passing to this script on the command line """
-    if len(sys.argv) == 3:
+    if len(sys.argv) > 1:
         AUTH['username'] = sys.argv[1]
-        AUTH['password'] = sys.argv[2]         
-        return AUTH
     else:
-        print 'You must call the test via:'
-        print 'python proxy_test.py username password'
+        AUTH['username'] = getpass.getuser()
+    AUTH['password'] = getpass.getpass('CAS Password for user %s:' % AUTH['username'])        
+    return AUTH
 
 def get_token(opener, url, token=TOKEN):
     """ Get CSRF token """
