@@ -53,8 +53,20 @@ def get_ticket(page, app_url):
     starts = [app_url,'?ticket=']
     return find_in_page(page, starts, '"')
 
+def find_in_dom(page, top, parent, child):
+    """ Use dom to get values from page """
+    from xml.dom import minidom
+    dom = minidom.parseString(page)
+    topdom = dom.getElementsByTagname(top)[0]
+    return dom.getElementsByTagname(parent)[0].
+               getElementsByTagname(child)[0].
+               getAttribute('data')
+
 def find_in_page(page, starts, stop):
-    """ make this less ugly and more generic with regex """
+    """ Replace this with find_in_dom ?
+        Although without knowing the CAS login page this
+        is probably more generic.
+    """
     end = page.find(starts[0])
     start = end + page[end:].find(starts[1]) + len(starts[1])
     end = start + page[start:].find(stop)
