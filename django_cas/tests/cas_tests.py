@@ -53,14 +53,16 @@ def get_ticket(page, app_url):
     starts = [app_url,'?ticket=']
     return find_in_page(page, starts, '"')
 
-def find_in_dom(page, top, parent, child):
+def find_in_dom(page, nesting=['body','form']):
     """ Use dom to get values from page """
     from xml.dom import minidom
     dom = minidom.parseString(page)
-    topdom = dom.getElementsByTagname(top)[0]
-    return dom.getElementsByTagname(parent)[0].
-               getElementsByTagname(child)[0].
-               getAttribute('data')
+    for level in nesting:
+        try:
+            dom = dom.getElementsByTagname(level)[0]
+        except:
+            break
+    return dom.getAttribute('data')
 
 def find_in_page(page, starts, stop):
     """ Replace this with find_in_dom ?
