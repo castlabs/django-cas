@@ -7,12 +7,14 @@
 # python proxy_test.py username password
 # You will need to edit the constants below to match your setup ...
 
+import unittest
 import sys
 import getpass
 import urllib2
 import urllib
 from urlparse import urljoin
 import cookielib
+from xml.dom import minidom
 
 # Add in a separate test_config file if you wish of the following format
 try:
@@ -31,101 +33,127 @@ except:
             'submit' : 'Login'         # login submit button
            }
 
-def get_auth():
-    """ Get authentication by passing to this script on the command line """
-    if len(sys.argv) > 1:
-        AUTH['username'] = sys.argv[1]
-    else:
-        AUTH['username'] = getpass.getuser()
-    AUTH['password'] = getpass.getpass('CAS Password for user %s:' % AUTH['username'])        
-    return AUTH
+class TestCAS(unittest.TestCase):
+    """ A class for testing a CAS setup both for standard and proxy authentication """
 
-def get_token(opener, url, token=TOKEN):
-    """ Get CSRF token """
-    r = opener.open(url)
-    page = r.read()
-    starts = ['<input type="hidden" name="%s"' % token,
-              'value="']
-    return find_in_page(page, starts, '"')
+    opener = None
+    auth = {}
 
-def get_ticket(page, app_url):
-    """ Get CSRF token """
-    starts = [app_url,'?ticket=']
-    return find_in_page(page, starts, '"')
+    def setUp(self):
+        cj = cookielib.CookieJar()
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+        urllib2.install_opener(opener)
+        self.opener = opener
+        self.get_auth()
 
-def find_in_dom(page, nesting=['body','form']):
-    """ Use dom to get values from page """
-    from xml.dom import minidom
-    dom = minidom.parseString(page)
-    for level in nesting:
-        try:
-            dom = dom.getElementsByTagname(level)[0]
-        except:
-            break
-    return dom.getAttribute('data')
+    def test_cas(self):
+        """ Test ordinary and proxy CAS login
+            NB cant put these into separate tests since tickets
+            are required to be passed between tests
+        """
+        print 'Test ordinary CAS login'
+        print '-----------------------'
+        self.ticket = self.login()
+        self.get_restricted()
+        print 'Test proxy CAS login'
+        print '--------------------'
+        iou = self.get_proxy()
+        if iou:
+            print 'Got IOU:%s' % iou
+        else:
+            print 'Proxy CAS login failed, no IOU'
+    
+    def get_auth(self):
+        """ Get authentication by passing to this script on the command line """
+        if len(sys.argv) > 1:
+            self.auth['username'] = sys.argv[1]
+        else:
+            self.auth['username'] = getpass.getuser()
+        self.auth['password'] = getpass.getpass('CAS Password for user %s:' % AUTH['username'])        
+        return 
 
-def find_in_page(page, starts, stop):
-    """ Replace this with find_in_dom ?
-        Although without knowing the CAS login page this
-        is probably more generic.
-    """
-    end = page.find(starts[0])
-    start = end + page[end:].find(starts[1]) + len(starts[1])
-    end = start + page[start:].find(stop)
-    found = page[start:end]
-    return found
+    def get_token(self, url, token=TOKEN):
+        """ Get CSRF token """
+        r = self.opener.open(url)
+        page = r.read()
+        starts = ['<input type="hidden" name="%s"' % token,
+                  'value="']
+        return self.find_in_page(page, starts, '"')
 
-def login(opener, auth):
-    """ Login to CAS server """
-    url = '%s/login?service=%s' % (CAS_SERVER_URL, APP_URL)    
-    ticket = ''
-    token = get_token(opener, url)
-    if token:
-        auth[TOKEN] = token
-    else:
-        print 'FAILED CSRF Token could not be found on page'
+    def get_ticket(self, page, app_url):
+        """ Get CSRF token """
+        starts = [app_url,'?ticket=']
+        return self.find_in_page(page, starts, '"')
+
+    def find_in_dom(self, page, nesting=['body','form']):
+        """ Use dom to get values from XML or page """
+        dom = minidom.parseString(page)
+        for level in nesting:
+            try:
+                dom = dom.getElementsByTagName(level)[0]
+            except:
+                break
+        return dom.childNodes[0].nodeValue
+
+    def find_in_page(self, page, starts, stop):
+        """ Replace this with find_in_dom ?
+            Although without knowing the CAS login page this
+            is probably more generic.
+        """
+        end = page.find(starts[0])
+        start = end + page[end:].find(starts[1]) + len(starts[1])
+        end = start + page[start:].find(stop)
+        found = page[start:end]
+        return found
+
+    def login(self):
+        """ Login to CAS server """
+        url = '%s/login?service=%s' % (CAS_SERVER_URL, APP_URL)    
+        ticket = ''
+        token = self.get_token(url)
+        if token:
+            self.auth[TOKEN] = token
+        else:
+            print 'FAILED CSRF Token could not be found on page'
+            return ticket
+        self.auth['service'] = APP_URL
+        data = urllib.urlencode(self.auth)
+        sso_resp = self.opener.open(url, data)
+        sso_page = sso_resp.read()
+        found = sso_page.find(CAS_SUCCESS) > -1
+        sso_resp.close()    
+        if found:
+            ticket = self.get_ticket(sso_page, APP_URL)
+            print 'PASS CAS logged in to %s' % url 
+        else:
+            print 'FAILED CAS login to %s' % url 
         return ticket
-    auth['service'] = APP_URL
-    data = urllib.urlencode(auth)
-    sso_resp = opener.open(url, data)
-    sso_page = sso_resp.read()
-    found = sso_page.find(CAS_SUCCESS) > -1
-    sso_resp.close()    
-    if found:
-        ticket = get_ticket(sso_page, APP_URL)
-        print 'PASS CAS logged in to %s' % url 
-    else:
-        print 'FAILED CAS login to %s' % url 
-    return ticket
 
-def get_restricted(opener):
-    """ Access a restricted URL and see if its accessible """
-    url = APP_URL + APP_RESTRICTED
-    app_resp = opener.open(url)
-    ok = app_resp.code == 200
-    app_resp.close()
-    if ok:
-        print 'PASS logged in to restricted app at %s' % url
-    else:
-        print 'FAILED to log in to restricted app at %s' % url
-    return
+    def get_restricted(self):
+        """ Access a restricted URL and see if its accessible """
+        url = APP_URL + APP_RESTRICTED
+        app_resp = self.opener.open(url)
+        ok = app_resp.code == 200
+        app_resp.close()
+        if ok:
+            print 'PASS logged in to restricted app at %s' % url
+        else:
+            print 'FAILED to log in to restricted app at %s' % url
+        return
 
-def get_proxy(opener, ticket):
-    """ Use login ticket to get proxy """
-    url_args = (CAS_SERVER_URL, ticket, APP_URL, PROXY_URL)
-    iou_url = '%s/serviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
-    iou = opener.open(iou_url)
-    print iou.read()
+    def get_proxy(self):
+        """ Use login ticket to get proxy """
+        url_args = (CAS_SERVER_URL, self.ticket, APP_URL, PROXY_URL)
+        iou_url = '%s/serviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
+        iou = self.opener.open(iou_url)
+        page = iou.read()
+        if page.find('cas:authenticationSuccess') > -1:
+            iou_ticket = self.find_in_dom(page,['cas:serviceResponse',
+                                           'cas:authenticationSuccess',
+                                           'cas:proxyGrantingTicket'])
+            return iou_ticket
+        print page
+        return None
 
-cj = cookielib.CookieJar()
-opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-urllib2.install_opener(opener)
-auth = get_auth()
-print 'Test ordinary CAS login'
-print '-----------------------'
-ticket = login(opener, auth)
-get_restricted(opener)
-print ''
-print 'Test proxy CAS login'
-print '--------------------'
-get_proxy(opener, ticket)
+if __name__ == '__main__':
+    unittest.main()
