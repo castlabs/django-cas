@@ -4,7 +4,7 @@
 # This does script does it for you against the deployed servers
 
 # Run via python 2.4 or above ...
-# python proxy_test.py username password
+# python cas_tests.py [username]  
 # You will need to edit the constants below to match your setup ...
 
 import unittest
@@ -57,12 +57,17 @@ class TestCAS(unittest.TestCase):
         self.get_restricted()
         print 'Test proxy CAS login'
         print '--------------------'
-        iou = self.get_proxy()
+        iou = self.get_proxy_iou()
         if iou:
             print 'Got IOU:%s' % iou
         else:
             print 'Proxy CAS login failed, no IOU'
-    
+        pgt = self.get_proxy(iou)
+        if pgt:
+            print 'Got PGT:%s' % pgt
+        else:
+            print 'Proxy CAS login failed, no PGT'
+        
     def get_auth(self):
         """ Get authentication by passing to this script on the command line """
         if len(sys.argv) > 1:
@@ -141,18 +146,32 @@ class TestCAS(unittest.TestCase):
             print 'FAILED to log in to restricted app at %s' % url
         return
 
-    def get_proxy(self):
-        """ Use login ticket to get proxy """
-        url_args = (CAS_SERVER_URL, self.ticket, APP_URL, PROXY_URL)
-        iou_url = '%s/serviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
-        iou = self.opener.open(iou_url)
+    def get_proxy_iou(self):
+        """ Use login ticket to get proxy iou """
+        url_args = (CAS_URL, self.ticket, APP_URL, PROXY_URL)
+        url = '%s/serviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
+        iou = self.opener.open(url)
         page = iou.read()
         if page.find('cas:authenticationSuccess') > -1:
             iou_ticket = self.find_in_dom(page,['cas:serviceResponse',
-                                           'cas:authenticationSuccess',
-                                           'cas:proxyGrantingTicket'])
+                                                'cas:authenticationSuccess',
+                                                'cas:proxyGrantingTicket'])
             return iou_ticket
-        print page
+        return None
+
+    def get_proxy(self, iou):
+        """ Use login ticket to get proxy """
+        url_args = (PROXY_URL, iou)
+        url = '%s/pgtCallback?pgtIou=%s' % url_args
+        return url
+        pgt = self.opener.open(url)
+        page = pgt.read()
+        return page
+        if page.find('cas:authenticationSuccess') > -1:
+            pgt_ticket = self.find_in_dom(page,['cas:serviceResponse',
+                                                'cas:authenticationSuccess',
+                                                'cas:proxyGrantingTicket'])
+            return pgt_ticket
         return None
 
 if __name__ == '__main__':
