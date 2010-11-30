@@ -119,7 +119,7 @@ class TestCAS(unittest.TestCase):
         if token:
             self.auth[TOKEN] = token
         else:
-            print 'FAILED CSRF Token could not be found on page'
+            print 'FAIL: CSRF Token could not be found on page'
             return ticket
         self.auth['service'] = APP_URL
         data = urllib.urlencode(self.auth)
@@ -129,9 +129,9 @@ class TestCAS(unittest.TestCase):
         sso_resp.close()    
         if found:
             ticket = self.get_ticket(sso_page, APP_URL)
-            print 'PASS CAS logged in to %s' % url 
+            print 'PASS: CAS logged in to %s' % url 
         else:
-            print 'FAILED CAS login to %s' % url 
+            print 'FAIL: Couldnt login to %s' % url 
         return ticket
 
     def get_restricted(self):
@@ -141,30 +141,40 @@ class TestCAS(unittest.TestCase):
         ok = app_resp.code == 200
         app_resp.close()
         if ok:
-            print 'PASS logged in to restricted app at %s' % url
+            print 'PASS: logged in to restricted app at %s' % url
         else:
-            print 'FAILED to log in to restricted app at %s' % url
+            print 'FAIL: couldnt log in to restricted app at %s' % url
         return
 
     def get_proxy_iou(self):
         """ Use login ticket to get proxy iou """
-        url_args = (CAS_URL, self.ticket, APP_URL, PROXY_URL)
+        url_args = (CAS_SERVER_URL, self.ticket, APP_URL, PROXY_URL)
         url = '%s/serviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
-        iou = self.opener.open(url)
+        try:
+            iou = self.opener.open(url)
+        except:
+            return 'FAIL: service validate url=%s not found' % url
         page = iou.read()
         if page.find('cas:authenticationSuccess') > -1:
             iou_ticket = self.find_in_dom(page,['cas:serviceResponse',
                                                 'cas:authenticationSuccess',
                                                 'cas:proxyGrantingTicket'])
-            return iou_ticket
+            if iou_ticket:
+                return iou_ticket
+            else:
+                return 'FAIL: PGIOU Empty response'
+        else:
+            return 'FAIL: PGIOU Response failed authentication'
         return None
 
     def get_proxy(self, iou):
         """ Use login ticket to get proxy """
         url_args = (PROXY_URL, iou)
         url = '%s/pgtCallback?pgtIou=%s' % url_args
-        return url
-        pgt = self.opener.open(url)
+        try:
+            pgt = self.opener.open(url)
+        except:
+            return 'FAIL: PGTURL=%s not found' % url
         page = pgt.read()
         return page
         if page.find('cas:authenticationSuccess') > -1:
