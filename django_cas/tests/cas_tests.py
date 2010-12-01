@@ -98,7 +98,7 @@ class TestCAS(unittest.TestCase):
                 dom = dom.getElementsByTagName(level)[0]
             except:
                 break
-        return dom.childNodes[0].nodeValue
+        return dom.childNodes[0].nodeValue.strip()
 
     def find_in_page(self, page, starts, stop):
         """ Replace this with find_in_dom ?
@@ -109,7 +109,7 @@ class TestCAS(unittest.TestCase):
         start = end + page[end:].find(starts[1]) + len(starts[1])
         end = start + page[start:].find(stop)
         found = page[start:end]
-        return found
+        return found.strip()
 
     def login(self):
         """ Login to CAS server """
@@ -150,6 +150,7 @@ class TestCAS(unittest.TestCase):
         """ Use login ticket to get proxy iou """
         url_args = (CAS_SERVER_URL, self.ticket, APP_URL, PROXY_URL)
         url = '%s/serviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
+        return url
         try:
             iou = self.opener.open(url)
         except:
@@ -162,13 +163,14 @@ class TestCAS(unittest.TestCase):
             if iou_ticket:
                 return iou_ticket
             else:
-                return 'FAIL: PGIOU Empty response'
+                return 'FAIL: PGIOU Empty response from %s' % url
         else:
             return 'FAIL: PGIOU Response failed authentication'
         return None
 
     def get_proxy(self, iou):
         """ Use login ticket to get proxy """
+        return
         url_args = (PROXY_URL, iou)
         url = '%s/pgtCallback?pgtIou=%s' % url_args
         try:
