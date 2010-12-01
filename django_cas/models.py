@@ -41,9 +41,10 @@ class Tgt(models.Model):
             page.close()
 
 class PgtIOU(models.Model):
+    """ Proxy granting ticket and IOU """
     pgtIou = models.CharField(max_length = 255, unique = True)
     tgt = models.CharField(max_length = 255)
-    timestamp = models.DateTimeField(auto_now = True)
+    created = models.DateTimeField(auto_now = True)
 
 def get_tgt_for(user):
     if not settings.CAS_PROXY_CALLBACK:
