@@ -150,7 +150,6 @@ class TestCAS(unittest.TestCase):
         """ Use login ticket to get proxy iou """
         url_args = (CAS_SERVER_URL, self.ticket, APP_URL, PROXY_URL)
         url = '%s/serviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
-        return url
         try:
             iou = self.opener.open(url)
         except:
