@@ -1,5 +1,5 @@
 """CAS login/logout replacement views"""
-
+from datetime import datetime
 from urllib import urlencode
 from urlparse import urljoin
 
@@ -109,9 +109,11 @@ def logout(request, next_page=None):
 
 def proxy_callback(request):
     """Handles CAS 2.0+ XML-based proxy callback call.
-
     Stores the proxy granting ticket in the database for 
     future use.
+    
+    NB: Use created and set it in python in case database
+    has issues with setting up the default timestamp value
     """
     pgtIou = request.GET.get('pgtIou')
     tgt = request.GET.get('pgtId')
@@ -119,5 +121,10 @@ def proxy_callback(request):
     if not (pgtIou and tgt):
         return HttpResponse()
 
-    PgtIOU.objects.create(tgt = tgt, pgtIou = pgtIou)
-    return HttpResponse()
+    try:
+        PgtIOU.objects.create(tgt = tgt, pgtIou = pgtIou, created = datetime.now())
+    except:
+        return HttpResponse('PGT storage failed for %s' % str(request.GET), mimetype="text/plain")
+
+    return HttpResponse('Success', mimetype="text/plain")
+

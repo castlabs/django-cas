@@ -58,15 +58,15 @@ class TestCAS(unittest.TestCase):
         print 'Test proxy CAS login'
         print '--------------------'
         iou = self.get_proxy_iou()
-        if iou:
-            print 'Got IOU:%s' % iou
+        if iou.startswith('PGT'):
+            print 'PASS: Got IOU - %s for %s' % (iou, PROXY_URL)
         else:
-            print 'Proxy CAS login failed, no IOU'
+            print iou
         pgt = self.get_proxy(iou)
-        if pgt:
-            print 'Got PGT:%s' % pgt
+        if pgt.startswith('PGT'):
+            print 'PASS: Got PGT - %s' % pgt
         else:
-            print 'Proxy CAS login failed, no PGT'
+            print pgt
         
     def get_auth(self):
         """ Get authentication by passing to this script on the command line """
@@ -147,7 +147,9 @@ class TestCAS(unittest.TestCase):
         return
 
     def get_proxy_iou(self):
-        """ Use login ticket to get proxy iou """
+        """ Use login ticket to get proxy iou
+            NB: SSO server installation may require PROXY_URL/?pgtIou be called at the root
+        """
         url_args = (CAS_SERVER_URL, self.ticket, APP_URL, PROXY_URL)
         url = '%s/serviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
         try:
@@ -162,16 +164,40 @@ class TestCAS(unittest.TestCase):
             if iou_ticket:
                 return iou_ticket
             else:
-                return 'FAIL: PGIOU Empty response from %s' % url
+                if page:
+                    return "FAIL: NO PGIOU\n\n%s" % page
+                else:
+                    return 'FAIL: PGIOU Empty response from %s' % url
         else:
             return 'FAIL: PGIOU Response failed authentication'
         return None
 
-    def get_proxy(self, iou):
+    def get_proxy_pgt(self, iou):
+        """ Get the proxy granting ticket from our django database backend
+            Assume this is not being hammered with requests so just get latest PGT
+            should of been created by get_proxy_iou callback request 
+        """
+        return ''
+        url_args = (PROXY_URL, PROXY_PATH, iou)
+        url = '%s%s?pgtIou=%s' % url_args
+        try:
+            pgt = self.opener.open(url)
+        except:
+            return 'FAIL: PGTURL=%s not found' % url
+        page = pgt.read()
+        return page
+        if page.find('cas:authenticationSuccess') > -1:
+            pgt_ticket = self.find_in_dom(page,['cas:serviceResponse',
+                                                'cas:authenticationSuccess',
+                                                'cas:proxyGrantingTicket'])
+            return pgt_ticket
+        return None
+
+    def get_proxy_pt(self, iou):
         """ Use login ticket to get proxy """
-        return
-        url_args = (PROXY_URL, iou)
-        url = '%s/pgtCallback?pgtIou=%s' % url_args
+        return ''
+        url_args = (PROXY_URL, PROXY_PATH, iou)
+        url = '%s%s?pgtIou=%s' % url_args
         try:
             pgt = self.opener.open(url)
         except:
