@@ -1,12 +1,41 @@
-Ed Crewe 24 Nov 2010
---------------------
+Ed Crewe 2 Dec 2010
+====================
+
+Add proxy authentication
+------------------------
 
 Add the CAS proxy patch from Fredrik Jönsson Norrström
 
 Create this as a clone to allow for any other tweaks required, and so
 that it can easily pulled down for use.
 
-Also added missing exceptions.py
+- Added missing exceptions.py 
+- Modified model timestamp field to not use Oracle reserved word, and ensured timestamp was added
+- Added a test class that tests the full proxy authentication round trip
+  as detailed at https://wiki.jasig.org/display/CAS/Proxy+CAS+Walkthrough
+  NB: This class is independent of implementation so can be used to test java CAS proxies too
+
+Gotchas
+-------
+
+SSL
+
+You must ensure that the proxying server not only has SSL but that SSL has the full
+chain of valid certificates. This can be checked via
+
+openssl s_client -connect your.proxy.server:443 -verify 3 -pause -showcerts 
+
+otherwise the SSO server will reject it as a proxy and just do ordinary authentication
+
+Callback
+
+The callback url for some SSO server implementations may need to be at the root
+in this case you will need to add the following to your sites home page view in django
+rather than handle proxy validation via a separate entry in URLs 
+
+if request.GET.get('pgtIou',''):
+    from django_cas.views import proxy_callback
+    return proxy_callback(request)
 
 2.0.3 README
 ------------
