@@ -22,10 +22,10 @@ try:
     from test_config import *
 except:
     # Please edit these urls to match your cas server, proxy and app server urls
-    CAS_SERVER_URL = 'https://my.sso.server'
-    APP_URL = 'http://my.client.application'
+    CAS_SERVER_URL = 'https://my.sso.server/'
+    APP_URL = 'http://my.client.application/'
     APP_RESTRICTED = 'restricted'
-    PROXY_URL = 'https://my.proxy.application'
+    PROXY_URL = 'https://my.proxy.application/'
     # Depending on your cas login form you may need to adjust these field name keys
     TOKEN = 'token'                    # CSRF token field name
     CAS_SUCCESS = 'Login successful'   # CAS server successful login flag (find string in html page)
@@ -40,6 +40,7 @@ class TestCAS(unittest.TestCase):
 
     opener = None
     auth = {}
+    urls = {}
 
     def setUp(self):
         cj = cookielib.CookieJar()
@@ -47,12 +48,29 @@ class TestCAS(unittest.TestCase):
         urllib2.install_opener(opener)
         self.opener = opener
         self.get_auth()
+        self.set_url('cas', CAS_SERVER_URL)
+        self.set_url('app', APP_URL)
+        self.set_url('proxy', PROXY_URL)        
+
+    def set_url(self, name, url):
+        """ Make sure valid url with query string appended """
+        for end in ['/','.html','.htm']:
+            if url.endswith(end):
+                self.urls[name] = url              
+                return
+        self.urls[name] = '%s/' % url  
 
     def test_cas(self):
         """ Test ordinary and proxy CAS login
             NB cant put these into separate tests since tickets
             are required to be passed between tests
         """
+        print 'Testing with following URLs'
+        print '---------------------------'        
+        print 'CAS server = %s' % self.urls['cas']
+        print 'Application server = %s' % self.urls['app']
+        print 'Proxy CAS server = %s' % self.urls['proxy']        
+        print ''
         print 'Test ordinary CAS login'
         print '-----------------------'
         self.ticket = self.login()
@@ -64,7 +82,7 @@ class TestCAS(unittest.TestCase):
 
         iou = self.proxy1_iou()
         if iou.startswith('PGT'):
-            print 'PASS: Got IOU - %s for %s' % (iou, PROXY_URL)
+            print 'PASS: Got IOU - %s for %s' % (iou, self.urls['proxy'])
         else:
             print iou
 
@@ -83,9 +101,9 @@ class TestCAS(unittest.TestCase):
 
         proxy = self.proxy4_login(pt)
         if proxy:
-            print 'PASS: Logged in successfully to %s via %s' % (APP_URL, proxy) 
+            print 'PASS: Logged in successfully to %s via %s' % (self.urls['app'], proxy) 
         else:
-            print 'FAIL: The proxy login to %s via %s has failed' % (APP_URL, PROXY_URL) 
+            print 'FAIL: The proxy login to %s via %s has failed' % (self.urls['app'], self.urls['proxy']) 
 
         
     def get_auth(self):
@@ -99,11 +117,15 @@ class TestCAS(unittest.TestCase):
 
     def get_token(self, url, token=TOKEN):
         """ Get CSRF token """
-        r = self.opener.open(url)
+        try:
+            r = self.opener.open(url)
+        except:
+            return 'FAIL: URL not found %s' % url
         page = r.read()
         starts = ['<input type="hidden" name="%s"' % token,
                   'value="']
         return self.find_in_page(page, starts, '"')
+
 
     def get_ticket(self, page, app_url):
         """ Get CSRF token """
@@ -146,7 +168,7 @@ class TestCAS(unittest.TestCase):
 
     def login(self):
         """ Login to CAS server """
-        url = '%s/login?service=%s' % (CAS_SERVER_URL, APP_URL)    
+        url = '%slogin?service=%s' % (self.urls['cas'], self.urls['app'])    
         ticket = ''
         token = self.get_token(url)
         if token:
@@ -158,14 +180,14 @@ class TestCAS(unittest.TestCase):
         else:
             print 'FAIL: CSRF Token could not be found on page'
             return ticket
-        self.auth['service'] = APP_URL
+        self.auth['service'] = self.urls['app']
         data = urllib.urlencode(self.auth)
         sso_resp = self.opener.open(url, data)
         sso_page = sso_resp.read()
         found = sso_page.find(CAS_SUCCESS) > -1
         sso_resp.close()    
         if found:
-            ticket = self.get_ticket(sso_page, APP_URL)
+            ticket = self.get_ticket(sso_page, self.urls['app'])
             print 'PASS: CAS logged in to %s' % url 
         else:
             print 'FAIL: Couldnt login to %s' % url 
@@ -173,7 +195,7 @@ class TestCAS(unittest.TestCase):
 
     def get_restricted(self):
         """ Access a restricted URL and see if its accessible """
-        url = APP_URL + APP_RESTRICTED
+        url = self.urls['app'] + APP_RESTRICTED
         app_resp = self.opener.open(url)
         ok = app_resp.code == 200
         app_resp.close()
@@ -185,10 +207,10 @@ class TestCAS(unittest.TestCase):
 
     def proxy1_iou(self):
         """ Use login ticket to get proxy iou
-            NB: SSO server installation may require PROXY_URL/?pgtIou be called at the root
+            NB: SSO server installation may require self.urls['proxy']/?pgtIou be called at the root
         """
-        url_args = (CAS_SERVER_URL, self.ticket, APP_URL, PROXY_URL)
-        url = '%s/serviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
+        url_args = (self.urls['cas'], self.ticket, self.urls['app'], self.urls['proxy'])
+        url = '%sserviceValidate?ticket=%s&service=%s&pgtUrl=%s' % url_args
         try:
             iou = self.opener.open(url)
         except:
@@ -223,8 +245,8 @@ class TestCAS(unittest.TestCase):
 
     def proxy3_pt(self, pgt):
         """ Use granting ticket to get proxy """
-        url_args = (CAS_SERVER_URL, APP_URL, pgt)
-        url = '%s/proxy?targetService=%s&pgt=%s' % url_args
+        url_args = (self.urls['cas'], self.urls['app'], pgt)
+        url = '%sproxy?targetService=%s&pgt=%s' % url_args
         try:
             pt = self.opener.open(url)
         except:
@@ -239,8 +261,8 @@ class TestCAS(unittest.TestCase):
 
     def proxy4_login(self, pt):
         """ Use proxy ticket to login """
-        url_args = (CAS_SERVER_URL, APP_URL, pt)
-        url = '%s/proxyValidate?service=%s&ticket=%s' % url_args
+        url_args = (self.urls['cas'], self.urls['app'], pt)
+        url = '%sproxyValidate?service=%s&ticket=%s' % url_args
         try:
             login = self.opener.open(url)
         except:
