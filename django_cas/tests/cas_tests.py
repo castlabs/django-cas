@@ -9,6 +9,7 @@
 
 import unittest
 import sys
+import commands
 import getpass
 import urllib2
 import urllib
@@ -32,6 +33,7 @@ except:
             'password' : '',           # password field name
             'submit' : 'Login'         # login submit button
            }
+    SCRIPT = 'manage.py shell --plain < get_pgt.py'
 
 class TestCAS(unittest.TestCase):
     """ A class for testing a CAS setup both for standard and proxy authentication """
@@ -62,7 +64,7 @@ class TestCAS(unittest.TestCase):
             print 'PASS: Got IOU - %s for %s' % (iou, PROXY_URL)
         else:
             print iou
-        pgt = self.get_proxy(iou)
+        pgt = self.get_proxy_pgt(iou)
         if pgt.startswith('PGT'):
             print 'PASS: Got PGT - %s' % pgt
         else:
@@ -107,7 +109,10 @@ class TestCAS(unittest.TestCase):
         """
         end = page.find(starts[0])
         start = end + page[end:].find(starts[1]) + len(starts[1])
-        end = start + page[start:].find(stop)
+        endnum = page[start:].find(stop)
+        if endnum == -1:
+            endnum = len(page[start:])
+        end = start + endnum 
         found = page[start:end]
         return found.strip()
 
@@ -174,34 +179,22 @@ class TestCAS(unittest.TestCase):
 
     def get_proxy_pgt(self, iou):
         """ Get the proxy granting ticket from our django database backend
-            Assume this is not being hammered with requests so just get latest PGT
-            should of been created by get_proxy_iou callback request 
+            Fire off shell script to django shell environment so this test class is
+            independent of CAS implementation - can substitute this function
+            to get proxy ticket from Java CAS instead of django-cas for example
         """
-        return ''
-        url_args = (PROXY_URL, PROXY_PATH, iou)
-        url = '%s%s?pgtIou=%s' % url_args
-        try:
-            pgt = self.opener.open(url)
-        except:
-            return 'FAIL: PGTURL=%s not found' % url
-        page = pgt.read()
-        return page
-        if page.find('cas:authenticationSuccess') > -1:
-            pgt_ticket = self.find_in_dom(page,['cas:serviceResponse',
-                                                'cas:authenticationSuccess',
-                                                'cas:proxyGrantingTicket'])
-            return pgt_ticket
-        return None
+        out = commands.getoutput(SCRIPT)
+        pgt = self.find_in_page(out, ['>>>','PGT'], ' ')
+        return 'PGT%s' % pgt
 
-    def get_proxy_pt(self, iou):
+    def get_proxy_pt(self, pgt):
         """ Use login ticket to get proxy """
-        return ''
-        url_args = (PROXY_URL, PROXY_PATH, iou)
-        url = '%s%s?pgtIou=%s' % url_args
+        url_args = (CAS_SERVER_URL, APP_URL, pgt)
+        url = '%s?targetService=%s&pgt=%s' % url_args
         try:
             pgt = self.opener.open(url)
         except:
-            return 'FAIL: PGTURL=%s not found' % url
+            return 'FAIL: PTURL=%s not found' % url
         page = pgt.read()
         return page
         if page.find('cas:authenticationSuccess') > -1:
