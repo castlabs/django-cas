@@ -57,18 +57,36 @@ class TestCAS(unittest.TestCase):
         print '-----------------------'
         self.ticket = self.login()
         self.get_restricted()
+
+        print ''
         print 'Test proxy CAS login'
         print '--------------------'
-        iou = self.get_proxy_iou()
+
+        iou = self.proxy1_iou()
         if iou.startswith('PGT'):
             print 'PASS: Got IOU - %s for %s' % (iou, PROXY_URL)
         else:
             print iou
-        pgt = self.get_proxy_pgt(iou)
+
+        pgt = self.proxy2_pgt(iou)
         if pgt.startswith('PGT'):
             print 'PASS: Got PGT - %s' % pgt
         else:
             print pgt
+
+        pt = self.proxy3_pt(pgt)
+        if pt.startswith('PT'):
+            print 'PASS: Got PT - %s' % pt
+        else:
+            print pt
+
+
+        proxy = self.proxy4_login(pt)
+        if proxy:
+            print 'PASS: Logged in successfully to %s via %s' % (APP_URL, proxy) 
+        else:
+            print 'FAIL: The proxy login to %s via %s has failed' % (APP_URL, PROXY_URL) 
+
         
     def get_auth(self):
         """ Get authentication by passing to this script on the command line """
@@ -106,13 +124,23 @@ class TestCAS(unittest.TestCase):
         """ Replace this with find_in_dom ?
             Although without knowing the CAS login page this
             is probably more generic.
+            Starts is a list to allow a series of marker points
+            in case a single start point marker is not unique
         """
-        end = page.find(starts[0])
-        start = end + page[end:].find(starts[1]) + len(starts[1])
-        endnum = page[start:].find(stop)
-        if endnum == -1:
-            endnum = len(page[start:])
-        end = start + endnum 
+        pagepart = page
+        start = 0
+        for part in starts:
+            point = pagepart.find(part)
+            if point>-1:
+                start += point
+            else:
+                return "FAIL: Couldnt find '%s' in page" % part
+            pagepart = pagepart[start:]
+        start = start + len(part) 
+        end = page[start:].find(stop)
+        if end == -1:
+            end = len(page[start:])
+        end = start + end
         found = page[start:end]
         return found.strip()
 
@@ -122,7 +150,11 @@ class TestCAS(unittest.TestCase):
         ticket = ''
         token = self.get_token(url)
         if token:
-            self.auth[TOKEN] = token
+            if token.startswith('FAIL'):
+                print token
+                return ticket
+            else:
+                self.auth[TOKEN] = token
         else:
             print 'FAIL: CSRF Token could not be found on page'
             return ticket
@@ -151,7 +183,7 @@ class TestCAS(unittest.TestCase):
             print 'FAIL: couldnt log in to restricted app at %s' % url
         return
 
-    def get_proxy_iou(self):
+    def proxy1_iou(self):
         """ Use login ticket to get proxy iou
             NB: SSO server installation may require PROXY_URL/?pgtIou be called at the root
         """
@@ -177,31 +209,47 @@ class TestCAS(unittest.TestCase):
             return 'FAIL: PGIOU Response failed authentication'
         return None
 
-    def get_proxy_pgt(self, iou):
-        """ Get the proxy granting ticket from our django database backend
-            Fire off shell script to django shell environment so this test class is
-            independent of CAS implementation - can substitute this function
+    def proxy2_pgt(self, iou):
+        """ Dig out the proxy granting ticket using shell script so this test class
+            is independent of CAS implementation - eg. can substitute this function
             to get proxy ticket from Java CAS instead of django-cas for example
+        
+            For a django-cas implementation this can be read from the ORM
+            by calling the django shell environment
         """
         out = commands.getoutput(SCRIPT)
-        pgt = self.find_in_page(out, ['>>>','PGT'], ' ')
+        pgt = self.find_in_page(out, ['PGT',], ' ')
         return 'PGT%s' % pgt
 
-    def get_proxy_pt(self, pgt):
-        """ Use login ticket to get proxy """
+    def proxy3_pt(self, pgt):
+        """ Use granting ticket to get proxy """
         url_args = (CAS_SERVER_URL, APP_URL, pgt)
-        url = '%s?targetService=%s&pgt=%s' % url_args
+        url = '%s/proxy?targetService=%s&pgt=%s' % url_args
         try:
-            pgt = self.opener.open(url)
+            pt = self.opener.open(url)
         except:
             return 'FAIL: PTURL=%s not found' % url
-        page = pgt.read()
-        return page
+        page = pt.read()
+        if page.find('cas:serviceResponse') > -1:
+            pt_ticket = self.find_in_dom(page,['cas:proxySuccess',
+                                               'cas:proxyTicket'])
+            return pt_ticket
+        return None
+
+
+    def proxy4_login(self, pt):
+        """ Use proxy ticket to login """
+        url_args = (CAS_SERVER_URL, APP_URL, pt)
+        url = '%s/proxyValidate?targetService=%s&ticket=%s' % url_args
+        try:
+            login = self.opener.open(url)
+        except:
+            return 'FAIL: PTURL=%s not found' % url
+        page = login.read()
         if page.find('cas:authenticationSuccess') > -1:
-            pgt_ticket = self.find_in_dom(page,['cas:serviceResponse',
-                                                'cas:authenticationSuccess',
-                                                'cas:proxyGrantingTicket'])
-            return pgt_ticket
+            proxy = self.find_in_dom(page,['cas:proxies',
+                                               'cas:proxy'])
+            return proxy
         return None
 
 if __name__ == '__main__':
