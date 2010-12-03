@@ -33,7 +33,7 @@ except:
             'password' : '',           # password field name
             'submit' : 'Login'         # login submit button
            }
-    SCRIPT = 'manage.py shell --plain < get_pgt.py'
+    SCRIPT = 'manage.py shell --plain < get_pgt.py' # A script to extract the PGT from your proxying server
 
 class TestCAS(unittest.TestCase):
     """ A class for testing a CAS setup both for standard and proxy authentication """
@@ -240,7 +240,7 @@ class TestCAS(unittest.TestCase):
     def proxy4_login(self, pt):
         """ Use proxy ticket to login """
         url_args = (CAS_SERVER_URL, APP_URL, pt)
-        url = '%s/proxyValidate?targetService=%s&ticket=%s' % url_args
+        url = '%s/proxyValidate?service=%s&ticket=%s' % url_args
         try:
             login = self.opener.open(url)
         except:
