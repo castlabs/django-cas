@@ -14,6 +14,7 @@ that it can easily pulled down for use.
 - Added a test class that tests the full proxy authentication round trip
   as detailed at https://wiki.jasig.org/display/CAS/Proxy+CAS+Walkthrough
   NB: This class is independent of implementation so can be used to test java CAS proxies too
+- Added switch to use proxyValidate CAS server call if the ticket starts with PT instead of ST
 
 Gotchas
 -------
