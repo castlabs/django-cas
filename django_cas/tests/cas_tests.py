@@ -253,9 +253,14 @@ class TestCAS(unittest.TestCase):
             return 'FAIL: PTURL=%s not found' % url
         page = pt.read()
         if page.find('cas:serviceResponse') > -1:
-            pt_ticket = self.find_in_dom(page,['cas:proxySuccess',
-                                               'cas:proxyTicket'])
-            return pt_ticket
+            try:
+                pt_ticket = self.find_in_dom(page,['cas:proxySuccess',
+                                                   'cas:proxyTicket'])
+                return pt_ticket
+            except:
+                print url
+                print page
+                return ''
         return None
 
 
@@ -268,6 +273,7 @@ class TestCAS(unittest.TestCase):
         except:
             return 'FAIL: PTURL=%s not found' % url
         page = login.read()
+        print url
         if page.find('cas:authenticationSuccess') > -1:
             proxy = self.find_in_dom(page,['cas:proxies',
                                                'cas:proxy'])

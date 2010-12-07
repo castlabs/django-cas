@@ -96,8 +96,9 @@ def verify_proxy_ticket(ticket, service):
         if tree[0].tag.endswith('authenticationSuccess'):
             username = tree[0][0].text
             proxies = []
-            for element in tree[0][1]:
-                proxies.append(element.text)
+            if len(tree[0]) > 1:
+                for element in tree[0][1]:
+                    proxies.append(element.text)
             return {"username": username, "proxies": proxies}
         else:
             return None
@@ -112,14 +113,19 @@ if settings.CAS_VERSION not in _PROTOCOLS:
 
 _verify = _PROTOCOLS[settings.CAS_VERSION]
 
+SSO_PROXIED_PATHS = ['http://localhost:56000/portal']
 
 class CASBackend(object):
     """CAS authentication backend"""
 
     def authenticate(self, ticket, service):
         """Verifies CAS ticket and gets or creates User object"""
-
-        username = _verify(ticket, service)
+        if ticket.startswith('PT'):
+            authdict = verify_proxy_ticket(ticket, service)
+            if authdict:
+                username = authdict.get('username','')
+        else:
+            username = _verify(ticket, service)
         if not username:
             return None
         try:
