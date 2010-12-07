@@ -75,11 +75,12 @@ class TestCAS(unittest.TestCase):
         print '-----------------------'
         self.ticket = self.login()
         self.get_restricted()
+        self.logout()
 
         print ''
         print 'Test proxy CAS login'
         print '--------------------'
-
+        self.ticket = self.login()
         iou = self.proxy1_iou()
         if iou.startswith('PGT'):
             print 'PASS: Got IOU - %s for %s' % (iou, self.urls['proxy'])
@@ -104,6 +105,9 @@ class TestCAS(unittest.TestCase):
             print 'PASS: Logged in successfully to %s via %s' % (self.urls['app'], proxy) 
         else:
             print 'FAIL: The proxy login to %s via %s has failed' % (self.urls['app'], self.urls['proxy']) 
+
+        self.logout()
+        self.proxy5_login(pt)
 
         
     def get_auth(self):
@@ -193,9 +197,19 @@ class TestCAS(unittest.TestCase):
             print 'FAIL: Couldnt login to %s' % url 
         return ticket
 
-    def get_restricted(self):
+    def logout(self):
+        """ Logout inbetween tests """
+        url = '%slogout' % self.urls['cas']
+        app_resp = self.opener.open(url)
+        app_resp.close()
+        print 'Logged out'
+        return
+
+    def get_restricted(self, ticket=''):
         """ Access a restricted URL and see if its accessible """
-        url = self.urls['app'] + APP_RESTRICTED
+        url = '%s%s' % (self.urls['app'], APP_RESTRICTED)
+        if ticket:
+            url = '%s&ticket=%s' % (url, ticket)
         app_resp = self.opener.open(url)
         ok = app_resp.code == 200
         app_resp.close()
@@ -203,7 +217,6 @@ class TestCAS(unittest.TestCase):
             print 'PASS: logged in to restricted app at %s' % url
         else:
             print 'FAIL: couldnt log in to restricted app at %s' % url
-        return
 
     def proxy1_iou(self):
         """ Use login ticket to get proxy iou
@@ -273,12 +286,15 @@ class TestCAS(unittest.TestCase):
         except:
             return 'FAIL: PTURL=%s not found' % url
         page = login.read()
-        print url
         if page.find('cas:authenticationSuccess') > -1:
             proxy = self.find_in_dom(page,['cas:proxies',
-                                               'cas:proxy'])
+                                           'cas:proxy'])
             return proxy
         return None
+
+    def proxy5_login(self, pt):
+        """ Check if service redirects to proxy login if given a PT-ticket """
+        return self.get_restricted(pt)
 
 if __name__ == '__main__':
     unittest.main()
