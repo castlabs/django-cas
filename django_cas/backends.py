@@ -113,8 +113,6 @@ if settings.CAS_VERSION not in _PROTOCOLS:
 
 _verify = _PROTOCOLS[settings.CAS_VERSION]
 
-SSO_PROXIED_PATHS = ['http://localhost:56000/portal']
-
 class CASBackend(object):
     """CAS authentication backend"""
 
