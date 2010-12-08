@@ -64,8 +64,8 @@ def delete_old_tickets(**kwargs):
     """
     sender = kwargs.get('sender', None)
     now = datetime.now()
-    expire = datetime(now.year, now.month, now.day - 3)
+    expire = datetime(now.year, now.month, now.day - 2)
     sender.objects.filter(created__lt=expire).delete()
 
-post_save.connect(delete_old_tickets, sender=pgtIOU)
+post_save.connect(delete_old_tickets, sender=PgtIOU)
 post_save.connect(delete_old_tickets, sender=Tgt)
