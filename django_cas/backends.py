@@ -117,13 +117,15 @@ class CASBackend(object):
     """CAS authentication backend"""
 
     def authenticate(self, ticket, service):
-        """Verifies CAS ticket and gets or creates User object"""
-        if ticket.startswith('PT'):
-            authdict = verify_proxy_ticket(ticket, service)
-            if authdict:
-                username = authdict.get('username','')
-        else:
-            username = _verify(ticket, service)
+        """Verifies CAS ticket and gets or creates User object
+           NB: Use of PT to identify proxy
+        """
+        #if ticket.startswith('PT'):
+        #    authdict = verify_proxy_ticket(ticket, service)
+        #    if authdict:
+        #        username = authdict.get('username','')
+        #else:
+        username = _verify(ticket, service)
         if not username:
             return None
         try:

@@ -43,8 +43,8 @@ class TestCAS(unittest.TestCase):
     urls = {}
 
     def setUp(self):
-        cj = cookielib.CookieJar()
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+        self.cj = cookielib.CookieJar()
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
         urllib2.install_opener(opener)
         self.opener = opener
         self.get_auth()
@@ -78,8 +78,8 @@ class TestCAS(unittest.TestCase):
         self.logout()
 
         print ''
-        print 'Test proxy CAS login'
-        print '--------------------'
+        print 'Test get proxy ticket'
+        print '---------------------'
         self.ticket = self.login()
         iou = self.proxy1_iou()
         if iou.startswith('PGT'):
@@ -99,14 +99,18 @@ class TestCAS(unittest.TestCase):
         else:
             print pt
 
-
+        print ''
+        print 'Test SSO server login with proxy ticket'
+        print '---------------------------------------'
         proxy = self.proxy4_login(pt)
         if proxy:
-            print 'PASS: Logged in successfully to %s via %s' % (self.urls['app'], proxy) 
+            print 'PASS: Got Success response for app %s using proxy %s' % (self.urls['app'], proxy) 
         else:
             print 'FAIL: The proxy login to %s via %s has failed' % (self.urls['app'], self.urls['proxy']) 
 
-        self.logout()
+        print ''
+        print 'Test direct proxy login'
+        print '-----------------------'
         self.proxy5_login(pt)
 
         
@@ -119,13 +123,16 @@ class TestCAS(unittest.TestCase):
         self.auth['password'] = getpass.getpass('CAS Password for user %s:' % AUTH['username'])        
         return 
 
-    def get_token(self, url, token=TOKEN):
+    def get_token(self, url=None, token=TOKEN, page=''):
         """ Get CSRF token """
-        try:
-            r = self.opener.open(url)
-        except:
-            return 'FAIL: URL not found %s' % url
-        page = r.read()
+        if url:
+            try:
+                r = self.opener.open(url)
+            except:
+                return 'FAIL: URL not found %s' % url
+            page = r.read()
+        if not page:
+            return 'FAIL: Page is empty'
         starts = ['<input type="hidden" name="%s"' % token,
                   'value="']
         return self.find_in_page(page, starts, '"')
@@ -202,21 +209,32 @@ class TestCAS(unittest.TestCase):
         url = '%slogout' % self.urls['cas']
         app_resp = self.opener.open(url)
         app_resp.close()
+        self.cj.clear()
         print 'Logged out'
         return
 
-    def get_restricted(self, ticket=''):
-        """ Access a restricted URL and see if its accessible """
+    def get_restricted(self, ticket='', print_page=False):
+        """ Access a restricted URL and see if its accessible
+            Use token to check if this page has redirected to SSO login
+            ie. success for get_token is a fail for get restricted
+        """
         url = '%s%s' % (self.urls['app'], APP_RESTRICTED)
         if ticket:
             url = '%s&ticket=%s' % (url, ticket)
         app_resp = self.opener.open(url)
         ok = app_resp.code == 200
-        app_resp.close()
+        page = app_resp.read()
         if ok:
-            print 'PASS: logged in to restricted app at %s' % url
+            token = self.get_token(page=page)
+            if token and not token.startswith('FAIL'):
+                print 'FAIL: couldnt log in to restricted app at %s' % url
+            else:
+                print 'PASS: logged in to restricted app at %s' % url
         else:
             print 'FAIL: couldnt log in to restricted app at %s' % url
+        if print_page:
+            print page
+        app_resp.close()
 
     def proxy1_iou(self):
         """ Use login ticket to get proxy iou
@@ -278,7 +296,7 @@ class TestCAS(unittest.TestCase):
 
 
     def proxy4_login(self, pt):
-        """ Use proxy ticket to login """
+        """ Check proxy ticket for service """
         url_args = (self.urls['cas'], self.urls['app'], pt)
         url = '%sproxyValidate?service=%s&ticket=%s' % url_args
         try:
@@ -290,10 +308,12 @@ class TestCAS(unittest.TestCase):
             proxy = self.find_in_dom(page,['cas:proxies',
                                            'cas:proxy'])
             return proxy
+        else:
+            print page
         return None
 
     def proxy5_login(self, pt):
-        """ Check if service redirects to proxy login if given a PT-ticket """
+        """ Use proxy ticket to login directly to app """
         return self.get_restricted(pt)
 
 if __name__ == '__main__':
