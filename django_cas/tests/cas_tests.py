@@ -98,6 +98,7 @@ class TestCAS(unittest.TestCase):
             print 'PASS: Got PT - %s' % pt
         else:
             print pt
+        #self.logout()    
 
         print ''
         print 'Test SSO server login with proxy ticket'
@@ -107,7 +108,8 @@ class TestCAS(unittest.TestCase):
             print 'PASS: Got Success response for app %s using proxy %s' % (self.urls['app'], proxy) 
         else:
             print 'FAIL: The proxy login to %s via %s has failed' % (self.urls['app'], self.urls['proxy']) 
-
+        self.logout()
+        
         print ''
         print 'Test direct proxy login'
         print '-----------------------'

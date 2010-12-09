@@ -49,27 +49,25 @@ def _verify_cas2(ticket, service):
            urlencode(params))
 
     page = urlopen(url)
+    response = page.read()
+    tree = ElementTree.fromstring(response)
+    page.close()
 
-    try:
-        response = page.read()
-        tree = ElementTree.fromstring(response)
-        if tree[0].tag.endswith('authenticationSuccess'):
-            username = tree[0][0].text
-            if len(tree[0]) >= 2 and tree[0][1].tag.endswith('proxyGrantingTicket'):
-                pgtIou = PgtIOU.objects.get(pgtIou = tree[0][1].text)
-                try:
-                    tgt = Tgt.objects.get(username = username)
-                    tgt.tgt = pgtIou.tgt
-                    tgt.save()
-                except ObjectDoesNotExist:
-                    Tgt.objects.create(username = username, tgt = pgtIou.tgt)
+    if tree[0].tag.endswith('authenticationSuccess'):
+        username = tree[0][0].text
+        if len(tree[0]) >= 2 and tree[0][1].tag.endswith('proxyGrantingTicket'):
+            pgtIou = PgtIOU.objects.get(pgtIou = tree[0][1].text)
+            try:
+                tgt = Tgt.objects.get(username = username)
+                tgt.tgt = pgtIou.tgt
+                tgt.save()
+            except ObjectDoesNotExist:
+                Tgt.objects.create(username = username, tgt = pgtIou.tgt)
 
-                pgtIou.delete()
-            return username
-        else:
-            return None
-    finally:
-        page.close()
+            pgtIou.delete()
+        return username
+    else:
+        return None
 
 
 def verify_proxy_ticket(ticket, service):
