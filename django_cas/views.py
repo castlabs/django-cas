@@ -50,6 +50,8 @@ def _login_url(service, ticket='ST'):
     params = {'service': service}
     if settings.CAS_EXTRA_LOGIN_PARAMS:
         params.update(settings.CAS_EXTRA_LOGIN_PARAMS)
+    if not ticket:
+        ticket = 'ST'
     login = LOGINS.get(ticket[:2],'login')
     return urljoin(settings.CAS_SERVER_URL, login) + '?' + urlencode(params)
 
