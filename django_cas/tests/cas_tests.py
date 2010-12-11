@@ -98,8 +98,8 @@ class TestCAS(unittest.TestCase):
             print 'PASS: Got PT - %s' % pt
         else:
             print pt
-        #self.logout()    
 
+#        self.logout()    
         print ''
         print 'Test SSO server login with proxy ticket'
         print '---------------------------------------'
@@ -108,12 +108,13 @@ class TestCAS(unittest.TestCase):
             print 'PASS: Got Success response for app %s using proxy %s' % (self.urls['app'], proxy) 
         else:
             print 'FAIL: The proxy login to %s via %s has failed' % (self.urls['app'], self.urls['proxy']) 
+
         self.logout()
-        
         print ''
         print 'Test direct proxy login'
         print '-----------------------'
         self.proxy5_login(pt)
+        return
 
         
     def get_auth(self):
@@ -222,9 +223,15 @@ class TestCAS(unittest.TestCase):
         """
         url = '%s%s' % (self.urls['app'], APP_RESTRICTED)
         if ticket:
-            url = '%s&ticket=%s' % (url, ticket)
-        app_resp = self.opener.open(url)
-        ok = app_resp.code == 200
+            url = '%s?ticket=%s' % (url, ticket)
+        print url
+        return
+        try:
+            app_resp = self.opener.open(url)
+            ok = app_resp.code == 200
+        except:
+            print 'FAIL: couldnt log in to restricted app at %s' % url
+            return
         page = app_resp.read()
         if ok:
             token = self.get_token(page=page)
