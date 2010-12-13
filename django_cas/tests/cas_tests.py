@@ -74,7 +74,7 @@ class TestCAS(unittest.TestCase):
         print 'Test ordinary CAS login'
         print '-----------------------'
         self.ticket = self.login()
-        self.get_restricted()
+        self.get_restricted(opener=self.opener)
         self.logout()
 
         print ''
@@ -99,7 +99,9 @@ class TestCAS(unittest.TestCase):
         else:
             print pt
 
-#        self.logout()    
+        # NB: Dont logout proxy app, but test proxy auth with new openers
+        # for the tests to be valid...
+        
         print ''
         print 'Test SSO server login with proxy ticket'
         print '---------------------------------------'
@@ -109,11 +111,11 @@ class TestCAS(unittest.TestCase):
         else:
             print 'FAIL: The proxy login to %s via %s has failed' % (self.urls['app'], self.urls['proxy']) 
 
-        self.logout()
         print ''
         print 'Test direct proxy login'
         print '-----------------------'
-        self.proxy5_login(pt)
+        new_pt = self.proxy3_pt(pgt)
+        self.proxy5_login(new_pt)
         return
 
         
@@ -216,7 +218,7 @@ class TestCAS(unittest.TestCase):
         print 'Logged out'
         return
 
-    def get_restricted(self, ticket='', print_page=False):
+    def get_restricted(self, ticket='', opener=None, print_page=False):
         """ Access a restricted URL and see if its accessible
             Use token to check if this page has redirected to SSO login
             ie. success for get_token is a fail for get restricted
@@ -224,10 +226,8 @@ class TestCAS(unittest.TestCase):
         url = '%s%s' % (self.urls['app'], APP_RESTRICTED)
         if ticket:
             url = '%s?ticket=%s' % (url, ticket)
-        print url
-        return
         try:
-            app_resp = self.opener.open(url)
+            app_resp = opener.open(url)
             ok = app_resp.code == 200
         except:
             print 'FAIL: couldnt log in to restricted app at %s' % url
@@ -305,25 +305,30 @@ class TestCAS(unittest.TestCase):
 
 
     def proxy4_login(self, pt):
-        """ Check proxy ticket for service """
+        """ Check proxy ticket for service
+            Use a new opener so its not got any cookies / auth already
+        """
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
         url_args = (self.urls['cas'], self.urls['app'], pt)
         url = '%sproxyValidate?service=%s&ticket=%s' % url_args
         try:
-            login = self.opener.open(url)
+            login = opener.open(url)
         except:
             return 'FAIL: PTURL=%s not found' % url
         page = login.read()
+        print page
         if page.find('cas:authenticationSuccess') > -1:
             proxy = self.find_in_dom(page,['cas:proxies',
                                            'cas:proxy'])
             return proxy
-        else:
-            print page
         return None
 
     def proxy5_login(self, pt):
-        """ Use proxy ticket to login directly to app """
-        return self.get_restricted(pt)
+        """ Use proxy ticket to login directly to app
+            Use a new opener so its not got any cookies / auth already
+        """
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+        return self.get_restricted(ticket=pt, opener=opener)
 
 if __name__ == '__main__':
     unittest.main()
