@@ -1,6 +1,6 @@
 """CAS authentication backend"""
 
-from urllib import urlencode, urlopen
+import urllib
 from urlparse import urljoin
 
 from django.conf import settings
@@ -49,16 +49,17 @@ def _verify_cas2(ticket, service):
         params = {'ticket': ticket, 'service': service}
 
     url = (urljoin(settings.CAS_SERVER_URL, 'proxyValidate') + '?' +
-           urlencode(params))
+           urllib.urlencode(params))
 
-    page = urlopen(url)
+    page = urllib.urlopen(url)
     response = page.read()
     tree = ElementTree.fromstring(response)
     page.close()
 
     if tree.find(CAS + 'authenticationSuccess', namespaces=NSMAP):
         username = tree.find(CAS + 'authenticationSuccess/' + CAS + 'user', namespaces=NSMAP).text
-        pgtIouId = tree.find(CAS + 'authenticationSuccess/' + CAS + 'proxyGrantingTicket', namespaces=NSMAP).text
+        pgtIouIdElement = tree.find(CAS + 'authenticationSuccess/' + CAS + 'proxyGrantingTicket', namespaces=NSMAP);
+        pgtIouId = pgtIouIdElement.text if pgtIouIdElement else None
 
         if pgtIouId:
             pgtIou = PgtIOU.objects.get(pgtIou = pgtIouId)
