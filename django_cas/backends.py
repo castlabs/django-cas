@@ -59,7 +59,7 @@ def _verify_cas2(ticket, service):
     if tree.find(CAS + 'authenticationSuccess', namespaces=NSMAP):
         username = tree.find(CAS + 'authenticationSuccess/' + CAS + 'user', namespaces=NSMAP).text
         pgtIouIdElement = tree.find(CAS + 'authenticationSuccess/' + CAS + 'proxyGrantingTicket', namespaces=NSMAP);
-        pgtIouId = pgtIouIdElement.text if pgtIouIdElement else None
+        pgtIouId = pgtIouIdElement.text if pgtIouIdElement is not None else None
 
         if pgtIouId:
             pgtIou = PgtIOU.objects.get(pgtIou = pgtIouId)
