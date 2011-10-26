@@ -38,7 +38,7 @@ class Tgt(models.Model):
         try:
             response = page.read()
             tree = ElementTree.fromstring(response)
-            if tree.find(CAS + 'proxySuccess', namespaces=NSMAP):
+            if tree.find(CAS + 'proxySuccess', namespaces=NSMAP) is not None:
                 return tree.find(CAS + 'proxySuccess/' + CAS + 'proxyTicket' , namespaces=NSMAP).text
             else:
                 raise CasTicketException("Failed to get proxy ticket")
