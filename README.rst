@@ -42,6 +42,7 @@ Optional settings include:
 * CAS_RETRY_LOGIN: If True and an unknown or invalid ticket is received, the user is redirected back to the login page.
 * CAS_VERSION: The CAS protocol version to use. '1' and '2' are supported, with '2' being the default.
 * CAS_PROXY_CALLBACK: The URL given to the CAS server in order to initialize a proxy ticket. The ticket granting ticket will be sent to this URL. The url must be registered in urls.py and handled by django_cas.views.proxy_callback, e.g: ``(r'^accounts/login/casProxyCallback$', 'django_cas.views.proxy_callback')``
+* CAS_USER_DETAILS_RESOLVER: template method for populating the user object.
 
 Make sure your project knows how to log users in and out by adding these to your URL mappings:
 
@@ -50,33 +51,34 @@ Make sure your project knows how to log users in and out by adding these to your
 
 Users should now be able to log into your site (and staff into the administration interface) using CAS.
 
-Managing Access to the Admin Interface
---------------------------------------
+Populating The User Object From CAS 2.0 Attributes
+--------------------------------------------------
 
-At the moment, the best way to give a user access to the admin interface is by doing one of the following:
+Since there are manyfold ways transmitting user attributes in CAS and even more ways to map them
+ on django.auth.User the mapping is done via a template method.
 
-Create the initial superuser account with a username that matches the desired user. django_cas will be able to make use of the existing user.
-Similarly, create database fixtures for the superusers, and load them when deploying the application.
-Ask the user to sign in to the application and, as an admin, log into the admin interface and change their access through the Users table.
-Populating User Data
-To add user data, subclass CASBackend and specify that as your application's backend.
+The template method is defined via the ``CAS_USER_DETAILS_RESOLVER`` setting::
 
-For example::
+    CAS_USER_DETAILS_RESOLVER = cas_integration.populate_user
 
-    from django_cas.backends import CASBackend
-    
-    class PopulatedCASBackend(CASBackend):
-        """CAS authentication backend with user data populated from AD"""
-    
-        def authenticate(self, ticket, service):
-            """Authenticates CAS ticket and retrieves user data"""
-    
-            user = super(PopulatedCASBackend, self).authenticate(
-                ticket, service)
-    
-            # Connect to AD, modify user object, etc.
-    
-            return user
+and an example method would be::
+
+    CAS_URI = 'http://www.yale.edu/tp/cas'
+    NSMAP = {'cas': CAS_URI}
+    CAS = '{%s}' % CAS_URI
+
+    def populate_user(user, authentication_response):
+        if authentication_response.find(CAS + 'authenticationSuccess/'  + CAS + 'attributes'  , namespaces=NSMAP) is not None:
+            attr = authentication_response.find(CAS + 'authenticationSuccess/'  + CAS + 'attributes'  , namespaces=NSMAP)
+
+            if attr.find(CAS + 'is_superuser', NSMAP) is not None:
+                user.is_superuser = attr.find(CAS + 'is_superuser', NSMAP).text.upper() == 'TRUE'
+
+            if attr.find(CAS + 'is_staff', NSMAP) is not None:
+                user.is_staff = attr.find(CAS + 'is_staff', NSMAP).text.upper() == 'TRUE'
+        pass
+
+
 
 Preventing Infinite Redirects
 -----------------------------
@@ -127,10 +129,8 @@ Version 2.0 of django_cas breaks compatibility in some small ways, in order simp
 CAS_LOGIN_URL and CAS_LOGOUT_URL: Version 2.0 is capable of determining these automatically.
 CAS_POPULATE_USER: Subclass CASBackend instead (see above).
 CAS_REDIRECT_FIELD_NAME: Django's own REDIRECT_FIELD_NAME is now used unconditionally.
+CAS_USER_DETAILS_RESOLVER: template method for populating user object
 
-
-Ed Crewe 2 Dec 2010
-====================
 
 Add proxy authentication
 ------------------------

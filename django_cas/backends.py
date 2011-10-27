@@ -25,9 +25,9 @@ def _verify_cas1(ticket, service):
     try:
         verified = page.readline().strip()
         if verified == 'yes':
-            return page.readline().strip()
+            return page.readline().strip(), None
         else:
-            return None
+            return None, None
     finally:
         page.close()
 
@@ -71,9 +71,9 @@ def _verify_cas2(ticket, service):
                 Tgt.objects.create(username = username, tgt = pgtIou.tgt)
 
             pgtIou.delete()
-        return username
+        return username, tree
     else:
-        return None
+        return None, tree
 
 
 def verify_proxy_ticket(ticket, service):
@@ -117,6 +117,9 @@ if settings.CAS_VERSION not in _PROTOCOLS:
 
 _verify = _PROTOCOLS[settings.CAS_VERSION]
 
+_CAS_USER_DETAILS_RESOLVER = getattr(settings, 'CAS_USER_DETAILS_RESOLVER', None)
+
+
 class CASBackend(object):
     """CAS authentication backend"""
 
@@ -124,15 +127,18 @@ class CASBackend(object):
         """Verifies CAS ticket and gets or creates User object
            NB: Use of PT to identify proxy
         """
-        username = _verify(ticket, service)
+        username, authentication_response = _verify(ticket, service)
         if not username:
             return None
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            # user will have an "unusable" password
-            user = User.objects.create_user(username, '')
-            user.save()
+
+        user, created = User.objects.get_or_create(username=username)
+        if created:
+            user.set_unusable_password()
+
+        if authentication_response and _CAS_USER_DETAILS_RESOLVER:
+            _CAS_USER_DETAILS_RESOLVER(user, authentication_response)
+
+        user.save()
         return user
 
     def get_user(self, user_id):
@@ -142,3 +148,4 @@ class CASBackend(object):
             return User.objects.get(pk=user_id)
         except User.DoesNotExist:
             return None
+

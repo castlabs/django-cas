@@ -3,6 +3,7 @@
 == Version 2.1.1 ==
  
   * Bug Fix Release
+  * Added a template method for populating user object
 
 == Version 2.1.0 ==
  
