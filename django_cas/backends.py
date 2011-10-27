@@ -56,7 +56,7 @@ def _verify_cas2(ticket, service):
     tree = ElementTree.fromstring(response)
     page.close()
 
-    if tree.find(CAS + 'authenticationSuccess', namespaces=NSMAP):
+    if tree.find(CAS + 'authenticationSuccess', namespaces=NSMAP) is not None:
         username = tree.find(CAS + 'authenticationSuccess/' + CAS + 'user', namespaces=NSMAP).text
         pgtIouIdElement = tree.find(CAS + 'authenticationSuccess/' + CAS + 'proxyGrantingTicket', namespaces=NSMAP);
         pgtIouId = pgtIouIdElement.text if pgtIouIdElement is not None else None
