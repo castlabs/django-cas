@@ -22,7 +22,7 @@ class backendTest(TestCase):
     def test_verify_cas2_no_pgt(self):
         urllib.urlopen = dummyUrlOpenNoProxyGrantingTicket
         settings.CAS_PROXY_CALLBACK = None
-        user = _verify_cas2('ST-jkadfhjksdhjkfh', 'http://dummy')
+        user, authentication_response = _verify_cas2('ST-jkadfhjksdhjkfh', 'http://dummy')
         self.assertEqual('sannies', user)
 
     def test_verify_cas2_with_pgt(self):
@@ -33,6 +33,6 @@ class backendTest(TestCase):
 
         settings.CAS_PROXY_CALLBACK = "http://dummy2"
         prior = PgtIOU.objects.count()
-        user = _verify_cas2('ST-jkadfhjksdhjkfh', 'http://dummy')
+        user, authentication_response = _verify_cas2('ST-jkadfhjksdhjkfh', 'http://dummy')
         self.assertEqual(prior - 1, PgtIOU.objects.count()) # the pgtiou should be used up and deleted
         self.assertEqual('sannies', user)
