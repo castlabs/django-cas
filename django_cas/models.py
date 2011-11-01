@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django_cas.exceptions import CasTicketException, CasConfigException
 # Ed Crewe - add in signals to delete old tickets
 from django.db.models.signals import post_save
-from datetime import datetime
+from datetime import datetime, timedelta
 from django_cas import CAS, NSMAP
 
 class Tgt(models.Model):
@@ -66,7 +66,7 @@ def delete_old_tickets(**kwargs):
     """
     sender = kwargs.get('sender', None)
     now = datetime.now()
-    expire = datetime(now.year, now.month, now.day - 2)
+    expire = datetime(now.year, now.month, now.day) - timedelta(days=2)
     sender.objects.filter(created__lt=expire).delete()
 
 post_save.connect(delete_old_tickets, sender=PgtIOU)
