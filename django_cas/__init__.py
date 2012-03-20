@@ -17,7 +17,6 @@ _DEFAULTS = {
 }
 
 CAS_URI = 'http://www.yale.edu/tp/cas'
-NSMAP = {'cas': CAS_URI}
 CAS = '{%s}' % CAS_URI
 
 for key, value in _DEFAULTS.iteritems():

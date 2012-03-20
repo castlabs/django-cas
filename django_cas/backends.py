@@ -6,7 +6,7 @@ from urlparse import urljoin
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django_cas.models import User, Tgt, PgtIOU
-from django_cas import CAS, NSMAP
+from django_cas import CAS
 
 __all__ = ['CASBackend']
 
@@ -56,9 +56,9 @@ def _verify_cas2(ticket, service):
     tree = ElementTree.fromstring(response)
     page.close()
 
-    if tree.find(CAS + 'authenticationSuccess', namespaces=NSMAP) is not None:
-        username = tree.find(CAS + 'authenticationSuccess/' + CAS + 'user', namespaces=NSMAP).text
-        pgtIouIdElement = tree.find(CAS + 'authenticationSuccess/' + CAS + 'proxyGrantingTicket', namespaces=NSMAP);
+    if tree.find(CAS + 'authenticationSuccess') is not None:
+        username = tree.find(CAS + 'authenticationSuccess/' + CAS + 'user').text
+        pgtIouIdElement = tree.find(CAS + 'authenticationSuccess/' + CAS + 'proxyGrantingTicket');
         pgtIouId = pgtIouIdElement.text if pgtIouIdElement is not None else None
 
         if pgtIouId:

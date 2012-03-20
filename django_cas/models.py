@@ -8,7 +8,7 @@ from django_cas.exceptions import CasTicketException, CasConfigException
 # Ed Crewe - add in signals to delete old tickets
 from django.db.models.signals import post_save
 from datetime import datetime, timedelta
-from django_cas import CAS, NSMAP
+from django_cas import CAS
 
 class Tgt(models.Model):
     username = models.CharField(max_length = 255, unique = True)
@@ -38,8 +38,8 @@ class Tgt(models.Model):
         try:
             response = page.read()
             tree = ElementTree.fromstring(response)
-            if tree.find(CAS + 'proxySuccess', namespaces=NSMAP) is not None:
-                return tree.find(CAS + 'proxySuccess/' + CAS + 'proxyTicket' , namespaces=NSMAP).text
+            if tree.find(CAS + 'proxySuccess') is not None:
+                return tree.find(CAS + 'proxySuccess/' + CAS + 'proxyTicket').text
             else:
                 raise CasTicketException("Failed to get proxy ticket")
         finally:
